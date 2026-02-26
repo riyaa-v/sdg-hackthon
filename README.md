@@ -1,4 +1,4 @@
-# SCRAPE 2 SPARK AI
+# SCRAP 2 SPARK AI
 
 Battery Remaining Useful Life (RUL) Prediction + Risk & Sustainability Scoring
 
