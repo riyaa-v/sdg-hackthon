@@ -7,13 +7,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { TemperaturePoint } from '../pages/Analysis'
 
-type TemperatureChartProps = {
-  data: TemperatureChartPoint[]
+export type TemperaturePoint = {
+  cycle: number
+  temp: number
 }
 
-type TemperatureChartPoint = TemperaturePoint
+type TemperatureChartProps = {
+  data: TemperaturePoint[]
+}
 
 export function TemperatureChart({ data }: TemperatureChartProps) {
   return (

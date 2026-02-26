@@ -106,10 +106,33 @@ ml/models/
 
 # 🔄 Full System Run
 
-1. Start Backend  
-2. Start Frontend  
-3. Upload battery CSV  
-4. View prediction results  
+## Option A – Combined (single server, recommended)
+
+One app at **http://localhost:8000** (API + frontend):
+
+1. **First time:** install frontend deps and build:
+   ```bash
+   npm run build
+   ```
+2. **Backend:** create venv, install deps, then start:
+   ```bash
+   cd backend
+   python -m venv venv
+   venv\Scripts\activate    # Windows
+   pip install -r requirements.txt
+   uvicorn main:app --reload
+   ```
+   Or from repo root (with backend venv active): `npm run start`
+3. Open **http://localhost:8000** — UI and `/predict` API are on the same origin.
+
+To rebuild the frontend after changes: run `npm run build` from the repo root, then restart the backend.
+
+## Option B – Separate frontend and backend
+
+1. Start Backend (see **Run Backend** above) → http://localhost:8000  
+2. Start Frontend (see **Run Frontend** above) → http://localhost:5173  
+3. Use the app at http://localhost:5173; it will call the API at http://localhost:8000 (ensure backend is running).
+4. Upload battery CSV and view prediction results.  
 
 ---
 

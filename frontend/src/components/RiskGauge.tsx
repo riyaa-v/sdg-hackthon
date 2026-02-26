@@ -48,7 +48,7 @@ export function RiskGauge({ riskLevel }: RiskGaugeProps) {
               fill={color}
             />
             <Tooltip
-              formatter={(value: number) => [`${value.toFixed(0)}%`, 'Risk level']}
+              formatter={(value) => [typeof value === 'number' ? `${value.toFixed(0)}%` : '–', 'Risk level']}
               contentStyle={{
                 backgroundColor: '#020617',
                 borderRadius: 8,

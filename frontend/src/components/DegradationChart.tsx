@@ -7,13 +7,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { DegradationPoint } from '../pages/Analysis'
 
-type DegradationChartProps = {
-  data: DegradationChartPoint[]
+export type DegradationPoint = {
+  cycle: number
+  capacity: number
 }
 
-type DegradationChartPoint = DegradationPoint
+type DegradationChartProps = {
+  data: DegradationPoint[]
+}
 
 export function DegradationChart({ data }: DegradationChartProps) {
   return (

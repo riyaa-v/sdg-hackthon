@@ -19,10 +19,13 @@ export function SustainabilityCharts({
   co2SavedKg,
   lithiumSavedKg,
 }: SustainabilityChartsProps) {
+  const a = Number.isFinite(usableEnergyKwh) ? usableEnergyKwh : 0
+  const b = Number.isFinite(co2SavedKg) ? co2SavedKg : 0
+  const c = Number.isFinite(lithiumSavedKg) ? lithiumSavedKg : 0
   const data = [
-    { name: 'CO₂ Saved (kg)', value: co2SavedKg },
-    { name: 'Lithium Saved (kg)', value: lithiumSavedKg },
-    { name: 'Usable Energy (kWh)', value: usableEnergyKwh },
+    { name: 'CO₂ Saved (kg)', value: b },
+    { name: 'Lithium Saved (kg)', value: c },
+    { name: 'Usable Energy (kWh)', value: a },
   ]
 
   return (

@@ -6,7 +6,8 @@ type RULGaugeProps = {
 
 export function RULGauge({ predictedRulYears }: RULGaugeProps) {
   const maxYears = 30
-  const clamped = Math.max(0, Math.min(predictedRulYears, maxYears))
+  const safeYears = Number.isFinite(predictedRulYears) ? predictedRulYears : 0
+  const clamped = Math.max(0, Math.min(safeYears, maxYears))
   const percent = (clamped / maxYears) * 100
 
   const data = [{ name: 'RUL', value: percent }]
@@ -32,7 +33,7 @@ export function RULGauge({ predictedRulYears }: RULGaugeProps) {
               fill="#63b87f"
             />
             <Tooltip
-              formatter={(value: number) => [`${((value / 100) * maxYears).toFixed(1)} years`, 'RUL']}
+              formatter={(value) => [typeof value === 'number' ? `${((value / 100) * maxYears).toFixed(1)} years` : '–', 'RUL']}
               contentStyle={{
                 backgroundColor: '#020617',
                 borderRadius: 8,

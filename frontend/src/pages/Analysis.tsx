@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Component, type ReactNode } from 'react'
 import axios from 'axios'
 import { UploadCard } from '../components/UploadCard'
 import { DecisionBanner } from '../components/DecisionBanner'
@@ -26,8 +26,92 @@ export type BatteryResult = {
 }
 
 export type AnalysisResponse = {
-  total_batteries: number
-  results: BatteryResult[]
+  prediction: {
+    predicted_rul: number
+    confidence_score: number
+  }
+  deployment: {
+    grade: string
+    risk_level: string
+    recommendation: string
+  }
+  sustainability: {
+    usable_energy_kwh: number
+    co2_saved_kg: number
+    lithium_saved_kg: number
+    tree_equivalent: number
+  }
+}
+
+function toSafeNumber(value: unknown): number {
+  if (value === null || value === undefined) return 0
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function normalizeBatteryResult(raw: unknown): BatteryResult | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  let obj = r
+  if (r.data != null && typeof r.data === 'object') obj = r.data as Record<string, unknown>
+  const pred = obj.prediction as Record<string, unknown> | undefined
+  const depl = obj.deployment as Record<string, unknown> | undefined
+  const sust = obj.sustainability as Record<string, unknown> | undefined
+  if (!pred || !depl || !sust) return null
+  const grade = String(depl.grade ?? '')
+  const riskLevel =
+    depl.risk_level != null && String(depl.risk_level).trim() !== ''
+      ? String(depl.risk_level)
+      : grade === 'A'
+        ? 'Low'
+        : grade === 'B'
+          ? 'Medium'
+          : grade === 'C'
+            ? 'High'
+            : ''
+  return {
+    prediction: {
+      predicted_rul: toSafeNumber(pred.predicted_rul),
+      confidence_score: toSafeNumber(pred.confidence_score),
+    },
+    deployment: {
+      grade,
+      risk_level: riskLevel,
+      recommendation: String(depl.recommendation ?? depl.recommended_use ?? ''),
+    },
+    sustainability: {
+      usable_energy_kwh: toSafeNumber(sust.usable_energy_kwh),
+      co2_saved_kg: toSafeNumber(sust.co2_saved_kg),
+      lithium_saved_kg: toSafeNumber(sust.lithium_saved_kg),
+      tree_equivalent: toSafeNumber(sust.tree_equivalent),
+    },
+  }
+}
+
+type ErrorBoundaryProps = { children: ReactNode; fallback?: ReactNode }
+
+class ResultsErrorBoundary extends Component<ErrorBoundaryProps, { hasError: boolean }> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error('Analysis results render error:', error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback ?? (
+        <div className="mt-16 rounded-2xl border border-amber-500/40 bg-amber-900/20 p-6 text-amber-50">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300/90">Display error</div>
+          <p className="mt-2 text-sm">Results could not be displayed. The analysis may have completed; check the browser console for details.</p>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 export function AnalysisPage() {
@@ -66,13 +150,9 @@ export function AnalysisPage() {
     setError(null)
 
     try {
-      const response = await axios.post<AnalysisResponse>('http://localhost:8000/predict', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      const response = await axios.post<AnalysisResponse>('/predict', formData)
 
-      const battery = response.data.results?.[0]
+      const battery = normalizeBatteryResult(response.data)
 
       if (!battery) {
         setError('No valid battery data detected.')
@@ -81,8 +161,12 @@ export function AnalysisPage() {
       }
 
       setAnalysisData(battery)
-    } catch (err) {
-      setError('Unable to run analysis. Please ensure the backend is running and the file format is valid.')
+    } catch (err: unknown) {
+      const message =
+        axios.isAxiosError(err) && err.response?.data && typeof err.response.data === 'object' && 'error' in err.response.data
+          ? String((err.response.data as { error: unknown }).error)
+          : 'Unable to run analysis. Please ensure the backend is running and the file format is valid.'
+      setError(message)
       setAnalysisData(null)
     } finally {
       setLoading(false)
@@ -91,11 +175,11 @@ export function AnalysisPage() {
 
   useEffect(() => {
     if (!analysisData || !resultsRef.current) return
-
-    window.scrollTo({
-      top: resultsRef.current.offsetTop,
-      behavior: 'smooth',
+    const el = resultsRef.current
+    const id = requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
+    return () => cancelAnimationFrame(id)
   }, [analysisData])
 
   return (
@@ -137,9 +221,10 @@ export function AnalysisPage() {
       </section>
 
       {/* Results dashboard */}
-      <div ref={resultsRef} className="mx-auto max-w-6xl px-6 pb-20">
+      <div ref={resultsRef} className="mx-auto max-w-6xl px-6 pb-20 min-h-[400px]">
         {analysisData && (
-          <>
+          <ResultsErrorBoundary>
+            <>
             <section className="mt-16">
               <DecisionBanner recommendation={analysisData.deployment.recommendation} />
               <div className="mb-4 text-xs font-medium tracking-[0.24em] text-white/55">
@@ -223,7 +308,8 @@ export function AnalysisPage() {
                 lithiumSavedKg={analysisData.sustainability.lithium_saved_kg}
               />
             </section>
-          </>
+            </>
+          </ResultsErrorBoundary>
         )}
 
         {error && (

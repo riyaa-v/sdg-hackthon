@@ -1,5 +1,11 @@
+from pathlib import Path
+import io
+import logging
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import pandas as pd
 
 from feature_engineering import extract_full_features
@@ -18,19 +24,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Path to frontend build (when running from backend/: ../frontend/dist)
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
 # Load model once at startup
 model = load_model()
 
 
+def _serve_spa_or_home():
+    if FRONTEND_DIST.exists():
+        index_path = FRONTEND_DIST / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+    return {"message": "SecondSpark Backend Running", "hint": "Run 'npm run build' in frontend/ then restart backend."}
+
+
+# Mount built frontend static assets if present
+if FRONTEND_DIST.exists() and (FRONTEND_DIST / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+
 @app.get("/")
 def home():
-    return {"message": "SecondSpark Backend Running"}
+    return _serve_spa_or_home()
 
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+    print("POST /predict received, filename:", file.filename)
+    logging.info("POST /predict received, filename=%s content_type=%s", file.filename, file.content_type)
     try:
-        df = pd.read_csv(file.file)
+        contents = await file.read()
+        df = pd.read_csv(io.BytesIO(contents))
 
         if df.empty:
             return {"error": "Empty CSV file"}
@@ -138,3 +163,17 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         return {"error": str(e)}
+
+
+# SPA fallback: serve index.html for any other GET so client-side routing works
+if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
+    _videos_dir = FRONTEND_DIST / "videos"
+    if _videos_dir.exists():
+        app.mount("/videos", StaticFiles(directory=_videos_dir), name="videos")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        if full_path.startswith("api") or full_path.startswith("predict"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        return FileResponse(FRONTEND_DIST / "index.html")

@@ -1,0 +1,10 @@
+{
+  "name": "sdg-hackthon",
+  "private": true,
+  "description": "Scrap to Spark AI - Battery RUL + Sustainability",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && python -m uvicorn main:app --reload",
+    "run": "npm run build && npm run start"
+  }
+}
