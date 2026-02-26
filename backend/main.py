@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model, feature_columns = load_model()
+model= load_model()
 
 
 @app.get("/")
@@ -36,18 +36,38 @@ async def predict(file: UploadFile = File(...)):
 
         X = extract_full_features(df)
 
-        prediction = predict_rul_with_confidence(model, X)
+        predictions = predict_rul_with_confidence(model, X)
 
-        deployment = recommend_deployment(prediction["predicted_rul"])
+        results = []
 
-        sustainability = calculate_sustainability(
-            capacity_ah=X["Capacity"].iloc[0]
-        )
+        for pred in predictions:
+            rul = pred["predicted_rul"]
+            confidence = pred["confidence_score"]
+
+            capacity_val = float(X.iloc[0]["Capacity"])
+            soh_val = float(X.iloc[0]["capacity_ratio"])
+
+            decision = recommend_deployment(
+                predicted_rul=rul
+            )
+
+            impact = calculate_sustainability(
+                capacity_ah=capacity_val,
+                grade=decision["grade"]
+            )
+
+            results.append({
+                "prediction": {
+                    "predicted_rul": rul,
+                    "confidence_score": confidence
+                },
+                "deployment": decision,
+                "sustainability": impact
+            })
 
         return {
-            "prediction": prediction,
-            "deployment": deployment,
-            "sustainability": sustainability
+            "total_batteries": len(results),
+            "results": results
         }
 
     except Exception as e:
