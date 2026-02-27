@@ -292,7 +292,7 @@ export function AnalysisPage() {
                 usableEnergyKwh={analysisData.sustainability.usable_energy_kwh}
                 treeEquivalent={analysisData.sustainability.tree_equivalent}
                 lithiumSavedKg={analysisData.sustainability.lithium_saved_kg}
-                extendedLifecycleYears={analysisData.prediction.predicted_rul}
+                extendedLifecycle={analysisData.prediction.predicted_rul}
               />
             </section>
 
