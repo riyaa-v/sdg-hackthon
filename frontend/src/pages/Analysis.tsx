@@ -158,8 +158,14 @@ export function AnalysisPage() {
     setError(null)
 
     try {
-      const response = await axios.post<AnalysisResponse>('/predict', formData)
-      const raw = response.data
+      const API_BASE =
+    import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+  const response = await axios.post<AnalysisResponse>(
+  `${API_BASE}/predict`,
+  formData
+)
+
 
       const battery = normalizeBatteryResult(raw)
 
