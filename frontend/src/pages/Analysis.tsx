@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState, Component, type ReactNode } from 'react'
 import axios from 'axios'
 import { UploadCard } from '../components/UploadCard'
-import { DecisionBanner } from '../components/DecisionBanner'
-import { MetricsGrid } from '../components/MetricsGrid'
-import { RULGauge } from '../components/RULGauge'
-import { RiskGauge } from '../components/RiskGauge'
-import { SustainabilityCharts } from '../components/SustainabilityCharts'
+import {
+  CapacityDegradationCurve,
+  VoltageCurve,
+  TemperatureCurve,
+  SOHCurve,
+  RULGauge,
+  RiskGauge,
+  DeploymentDecisionCard,
+  SustainabilityImpactCards,
+  DegradationRateIndicator,
+} from '../components/analytics'
+import type { Trends } from '../types/analysis'
 
 export type BatteryResult = {
   prediction: {
@@ -119,6 +126,7 @@ export function AnalysisPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [analysisData, setAnalysisData] = useState<BatteryResult | null>(null)
+  const [fullResponse, setFullResponse] = useState<Record<string, unknown> | null>(null)
   const resultsRef = useRef<HTMLDivElement | null>(null)
 
   const handleFileSelect = (nextFile: File | null) => {
@@ -151,16 +159,27 @@ export function AnalysisPage() {
 
     try {
       const response = await axios.post<AnalysisResponse>('/predict', formData)
+      const raw = response.data
 
-      const battery = normalizeBatteryResult(response.data)
+      const battery = normalizeBatteryResult(raw)
 
       if (!battery) {
         setError('No valid battery data detected.')
         setAnalysisData(null)
+        setFullResponse(null)
         return
       }
 
       setAnalysisData(battery)
+      const payload =
+        raw != null &&
+        typeof raw === 'object' &&
+        'data' in raw &&
+        raw.data != null &&
+        typeof raw.data === 'object'
+          ? (raw as { data: Record<string, unknown> }).data
+          : (raw as Record<string, unknown>)
+      setFullResponse(payload)
     } catch (err: unknown) {
       const message =
         axios.isAxiosError(err) && err.response?.data && typeof err.response.data === 'object' && 'error' in err.response.data
@@ -168,6 +187,7 @@ export function AnalysisPage() {
           : 'Unable to run analysis. Please ensure the backend is running and the file format is valid.'
       setError(message)
       setAnalysisData(null)
+      setFullResponse(null)
     } finally {
       setLoading(false)
     }
@@ -220,113 +240,107 @@ export function AnalysisPage() {
         </div>
       </section>
 
-      {/* Results dashboard */}
-      <div ref={resultsRef} className="mx-auto max-w-6xl px-6 pb-20 min-h-[400px]">
-        {analysisData && (
+      {/* Results dashboard — cinematic analytics */}
+      <div ref={resultsRef} className="relative min-h-screen">
+        {/* Background video and gradient overlay */}
+        <div className="absolute inset-0">
+          <video
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover -z-20"
+            src="/videos/video3.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.85),rgba(0,0,0,0.95))] -z-10" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_20%,rgba(99,184,127,0.03),transparent_60%)] -z-10" />
+        </div>
+
+        <div className="relative mx-auto max-w-6xl px-6 pb-20 min-h-[400px]">
+          {analysisData && (
           <ResultsErrorBoundary>
             <>
-            <section className="mt-16">
-              <DecisionBanner recommendation={analysisData.deployment.recommendation} />
-              <div className="mb-4 text-xs font-medium tracking-[0.24em] text-white/55">
-                BATTERY INTELLIGENCE REPORT
+            <section className="pt-16 pb-8">
+              <h2 className="s2s-fade-up text-sm font-medium uppercase tracking-[0.28em] text-white/60" style={{ animationDelay: '100ms' }}>
+                Battery intelligence report
+              </h2>
+              <div className="mt-8 grid gap-6 lg:grid-cols-3">
+                <div className="s2s-fade-up" style={{ animationDelay: '200ms' }}>
+                  <DeploymentDecisionCard
+                    recommendation={analysisData.deployment.recommendation}
+                    grade={analysisData.deployment.grade}
+                    confidenceScore={analysisData.prediction.confidence_score}
+                  />
+                </div>
+                <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2 s2s-fade-up" style={{ animationDelay: '300ms' }}>
+                  <RULGauge predictedRulYears={analysisData.prediction.predicted_rul} />
+                  <RiskGauge riskLevel={analysisData.deployment.risk_level} />
+                </div>
               </div>
-              <MetricsGrid
-                predictedRulYears={analysisData.prediction.predicted_rul}
-                grade={analysisData.deployment.grade}
-                riskLevel={analysisData.deployment.risk_level}
-                recommendation={analysisData.deployment.recommendation}
-                confidenceScore={analysisData.prediction.confidence_score}
-              />
             </section>
 
-            {/* Sustainability metrics cards */}
-            <section className="mt-10 grid gap-4 md:grid-cols-4">
-              {[
-                {
-                  label: 'Usable energy',
-                  value: analysisData.sustainability.usable_energy_kwh,
-                  unit: 'kWh',
-                },
-                {
-                  label: 'CO₂ saved',
-                  value: analysisData.sustainability.co2_saved_kg,
-                  unit: 'kg',
-                },
-                {
-                  label: 'Lithium saved',
-                  value: analysisData.sustainability.lithium_saved_kg,
-                  unit: 'kg',
-                },
-                {
-                  label: 'Tree equivalent',
-                  value: analysisData.sustainability.tree_equivalent,
-                  unit: '',
-                },
-              ].map((item) => {
-                const isZero = !item.value
-                const valueDisplay = Number.isFinite(item.value) ? item.value.toFixed(1) : '–'
-                return (
-                  <div
-                    key={item.label}
-                    className={`rounded-2xl border p-4 sm:p-5 ${
-                      isZero
-                        ? 'border-white/10 bg-white/5 text-white/60'
-                        : 'border-white/15 bg-white/5 text-white'
-                    }`}
-                  >
-                    <div className="text-xs font-medium uppercase tracking-[0.16em] text-white/60">
-                      {item.label}
-                    </div>
-                    <div className="mt-3 flex items-baseline gap-1">
-                      <div className="text-2xl font-semibold sm:text-3xl">{valueDisplay}</div>
-                      {item.unit && (
-                        <div className="text-xs text-white/60">
-                          {item.unit}
-                        </div>
-                      )}
-                    </div>
-                    {isZero && (
-                      <div className="mt-1 text-[11px] text-white/50">
-                        No measurable impact in current scenario.
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </section>
-
-            {/* Charts */}
-            <section className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-              <RULGauge predictedRulYears={analysisData.prediction.predicted_rul} />
-              <RiskGauge riskLevel={analysisData.deployment.risk_level} />
-            </section>
-
-            <section className="mt-10">
-              <SustainabilityCharts
-                usableEnergyKwh={analysisData.sustainability.usable_energy_kwh}
+            <section className="py-12 border-t border-white/10 s2s-fade-up" style={{ animationDelay: '400ms' }}>
+              <SustainabilityImpactCards
                 co2SavedKg={analysisData.sustainability.co2_saved_kg}
+                usableEnergyKwh={analysisData.sustainability.usable_energy_kwh}
+                treeEquivalent={analysisData.sustainability.tree_equivalent}
                 lithiumSavedKg={analysisData.sustainability.lithium_saved_kg}
+                extendedLifecycleYears={analysisData.prediction.predicted_rul}
               />
             </section>
+
+            {/* Charts: always show when we have results; use trends from API or empty */}
+            {(() => {
+              const trends = (fullResponse?.trends ?? {}) as Trends
+              const sohTrend = trends?.soh_trend ?? []
+              const voltageTrend = trends?.voltage_trend ?? []
+              const tempTrend = trends?.temperature_trend ?? []
+              const capacityPctData = sohTrend.map((p) => ({
+                cycle: Number(p?.cycle) ?? 0,
+                capacityPct: (Number(p?.soh) ?? 0) * 100,
+              }))
+              return (
+                <>
+                  <section className="py-12 border-t border-white/10 s2s-fade-up" style={{ animationDelay: '500ms' }}>
+                    <DegradationRateIndicator
+                      sohData={sohTrend}
+                      degradationRateLabel={(fullResponse?.analysis as { degradation_rate?: string })?.degradation_rate}
+                    />
+                  </section>
+
+                  <section className="py-12 border-t border-white/10 grid gap-8 lg:grid-cols-2 s2s-fade-up" style={{ animationDelay: '600ms' }}>
+                    <CapacityDegradationCurve data={capacityPctData} />
+                    <SOHCurve data={sohTrend} />
+                  </section>
+
+                  <section className="py-12 border-t border-white/10 grid gap-8 lg:grid-cols-2 s2s-fade-up" style={{ animationDelay: '700ms' }}>
+                    <VoltageCurve data={voltageTrend} />
+                    <TemperatureCurve data={tempTrend} />
+                  </section>
+                </>
+              )
+            })()}
             </>
           </ResultsErrorBoundary>
         )}
 
         {error && (
-          <div className="mt-10 rounded-2xl border border-red-500/35 bg-red-950/40 p-5 text-sm text-red-100">
+          <div className="mt-10 rounded-2xl border border-red-500/35 bg-red-950/40 backdrop-blur-xl p-5 text-sm text-red-100 shadow-[0_20px_60px_rgba(196,80,80,0.15)]">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-red-300/90">ANALYSIS ERROR</div>
             <p className="mt-2 text-sm">{error}</p>
             {file && (
               <button
                 type="button"
                 onClick={handleRunAnalysis}
-                className="mt-4 inline-flex items-center justify-center rounded-full border border-red-400/70 px-4 py-1.5 text-xs font-medium text-red-100 hover:bg-red-500/15"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-red-400/70 px-4 py-1.5 text-xs font-medium text-red-100 hover:bg-red-500/15 transition-colors"
               >
                 Retry Analysis
               </button>
             )}
           </div>
         )}
+        </div>
       </div>
     </main>
   )
