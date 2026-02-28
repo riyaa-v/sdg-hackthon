@@ -1,145 +1,292 @@
-# SCRAP 2 SPARK AI
+🚀 SCRAP 2 SPARK (S2S)
+AI-Powered Battery Intelligence for Second-Life Decisioning
 
-Battery Remaining Useful Life (RUL) Prediction + Risk & Sustainability Scoring
+Transforming end-of-life battery telemetry into intelligent reuse, risk, and sustainability insights.
 
----
+🌍 Problem Statement
 
-## 🛠 Tech Stack
+With the rapid growth of EVs and energy storage systems, millions of lithium-ion batteries are approaching end-of-life.
 
-Frontend:
-- React (TypeScript)
-- Vite
-- Axios
-- Recharts
+However, “end-of-life” for EV use does not mean unusable.
 
-Backend:
-- FastAPI
-- Uvicorn
+Most retired batteries:
 
-ML:
-- Python
-- Scikit-learn
-- Pandas
-- NumPy
-- Joblib
+Still retain usable capacity
 
----
+Can be repurposed for lower-load applications
 
-## 📁 Project Structure
+Can reduce environmental waste significantly
 
-backend/   → FastAPI API server  
-frontend/  → React TypeScript dashboard  
-ml/        → ML training pipeline  
+The challenge is:
 
----
+❌ No intelligent system exists to evaluate battery reuse potential from raw telemetry data.
 
-# 🚀 How To Clone
+💡 Our Solution
 
-```bash
-git clone https://github.com/pulkittaneja09/sdg-hackthon.git
-cd sdg-hackthon
-```
+SCRAP 2 SPARK (S2S) is an AI-powered battery evaluation platform that:
 
----
+📊 Analyzes battery telemetry (CSV upload)
 
-# ▶️ Run Frontend
+🔮 Predicts Remaining Useful Life (RUL)
 
-```bash
+⚠️ Assesses deployment risk
+
+♻️ Recommends reuse vs recycling
+
+🌱 Calculates sustainability impact
+
+📈 Visualizes degradation trends
+
+All in one unified dashboard.
+
+🏗 System Architecture
+Frontend (Vite + React + TypeScript)
+        ↓
+FastAPI Backend (Python)
+        ↓
+ML Model (Random Forest Regressor)
+        ↓
+Deployment Engine + Sustainability Engine
+🔬 Core Features
+1️⃣ CSV Telemetry Upload
+
+Upload structured battery telemetry including:
+
+Cycle count
+
+Capacity
+
+Voltage
+
+Current
+
+Temperature
+
+Time
+
+2️⃣ Remaining Useful Life (RUL) Prediction
+
+Machine learning model predicts:
+
+Expected remaining cycles
+
+Confidence score
+
+Degradation rate
+
+3️⃣ Deployment Recommendation Engine
+
+Based on predicted RUL:
+
+Grade	Recommendation
+A	High-load reuse
+B	Medium-load storage
+C	Low-load backup
+D	Recycling recommended
+4️⃣ Risk Assessment
+
+Evaluates:
+
+Thermal stress
+
+Degradation speed
+
+Voltage instability
+
+Outputs:
+
+Low / Moderate / High Risk
+
+5️⃣ Sustainability Impact Analysis
+
+Calculates:
+
+♻️ Usable energy saved (kWh)
+
+🌍 CO₂ emissions reduced (kg)
+
+🔋 Lithium preserved (kg)
+
+🌳 Tree equivalent impact
+
+6️⃣ Advanced Data Visualizations
+
+Capacity degradation trend
+
+State-of-health curve
+
+Voltage curve per cycle
+
+Temperature stress trend
+
+RUL Gauge
+
+Risk Gauge
+
+🧠 Machine Learning Model
+
+Algorithm: Random Forest Regressor
+
+Feature Engineering:
+
+Capacity fade slope
+
+Voltage decay pattern
+
+Temperature variance
+
+Current stability
+
+Output:
+
+Predicted RUL
+
+Confidence score
+
+📂 Project Structure
+sdg-hackthon/
+│
+├── backend/
+│   ├── main.py
+│   ├── feature_engineering.py
+│   ├── rul_predictor.py
+│   ├── deployment_engine.py
+│   ├── sustainability_calculator.py
+│   └── models/
+│
+├── frontend/
+│   ├── src/
+│   ├── components/
+│   ├── pages/
+│   └── vite.config.ts
+│
+└── README.md
+⚙️ Local Setup
+Backend
+cd backend
+pip install -r requirements.txt
+python -m uvicorn main:app --reload
+
+Runs at:
+
+http://localhost:8000
+Frontend
 cd frontend
 npm install
 npm run dev
-```
 
-Open:
+Runs at:
+
 http://localhost:5173
+🌐 Production Deployment
+Frontend:
 
----
+Hosted on Vercel
 
-# ▶️ Run Backend
+Backend:
 
-```bash
-cd backend
-python -m venv venv
-```
+Hosted on Render
 
-Activate environment:
+Environment Variable (Vercel):
 
-Windows:
-```bash
-venv\Scripts\activate
-```
+VITE_API_URL=https://sdg-hackathon.onrender.com
 
-Mac/Linux:
-```bash
-source venv/bin/activate
-```
+🎯 Intended Users
 
-Install dependencies:
+This platform is built for:
 
-```bash
-pip install -r requirements.txt
-```
+EV manufacturers
 
-Run server:
+Battery recycling companies
 
-```bash
-uvicorn main:app --reload
-```
+Energy storage providers
 
-Backend runs at:
-http://localhost:8000
+Sustainability analytics firms
 
----
+Circular economy startups
 
-# ▶️ Train ML Model
+Not for individual consumers — but for industrial battery evaluation pipelines.
 
-```bash
-cd ml
-pip install -r requirements.txt
-python src/train_model.py
-```
+📊 Sample Use Case
 
-Model will be saved in:
-ml/models/
+EV battery reaches end-of-life.
 
----
+Manufacturer uploads telemetry CSV.
 
-# 🔄 Full System Run
+S2S analyzes degradation pattern.
 
-## Option A – Combined (single server, recommended)
+System recommends:
 
-One app at **http://localhost:8000** (API + frontend):
+Reuse for grid storage
 
-1. **First time:** install frontend deps and build:
-   ```bash
-   npm run build
-   ```
-2. **Backend:** create venv, install deps, then start:
-   ```bash
-   cd backend
-   python -m venv venv
-   venv\Scripts\activate    # Windows
-   pip install -r requirements.txt
-   uvicorn main:app --reload
-   ```
-   Or from repo root (with backend venv active): `npm run start`
-3. Open **http://localhost:8000** — UI and `/predict` API are on the same origin.
+OR recycle responsibly
 
-To rebuild the frontend after changes: run `npm run build` from the repo root, then restart the backend.
+Sustainability metrics calculated.
 
-## Option B – Separate frontend and backend
+🚀 Why This Matters
 
-1. Start Backend (see **Run Backend** above) → http://localhost:8000  
-2. Start Frontend (see **Run Frontend** above) → http://localhost:5173  
-3. Use the app at http://localhost:5173; it will call the API at http://localhost:8000 (ensure backend is running).
-4. Upload battery CSV and view prediction results.  
+Reduces lithium mining demand
 
----
+Cuts carbon emissions
 
-## ⚠ Notes
+Extends battery lifecycle
 
-- Do NOT push node_modules
-- Do NOT push large datasets
-- Do NOT push large .pkl model files
-- After cloning always run `npm install`
-- Use Python 3.9+ and Node 18+
+Enables circular energy economy
+
+Supports UN SDG Goals
+
+🔥 Innovation Highlights
+
+End-to-end AI + Deployment engine
+
+Production-grade full-stack architecture
+
+Real-time visualization dashboard
+
+Sustainability scoring layer
+
+Risk-aware decision system
+
+👨‍💻 Tech Stack
+
+Frontend
+
+React
+
+TypeScript
+
+Vite
+
+Tailwind CSS
+
+Axios
+
+Backend
+
+FastAPI
+
+Pandas
+
+Scikit-learn
+
+Uvicorn
+
+Deployment
+
+Vercel
+
+Render
+
+🏆 Future Improvements
+
+Multi-battery batch analysis
+
+API authentication layer
+
+Battery passport integration
+
+Live IoT telemetry ingestion
+
+Explainable AI visualization
+
+Dashboard for enterprise users
