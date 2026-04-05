@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Route, Routes, useNavigate } from 'react-router-dom'
+import { Link, Route, Routes, useNavigate, Navigate } from 'react-router-dom'
 import { AnalysisPage } from './pages/Analysis'
+import { LoginPage } from './pages/Login'
+import { ProfilePage } from './pages/Profile'
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -395,6 +397,44 @@ function HomePage() {
 
 function App() {
   const [scrolled, setScrolled] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('s2s_auth')
+      if (raw) {
+        const obj = JSON.parse(raw)
+        setUserEmail(obj?.email ?? null)
+        setIsAuthenticated(true)
+      } else {
+        setUserEmail(null)
+        setIsAuthenticated(false)
+      }
+    } catch (err) {
+      setIsAuthenticated(false)
+      setUserEmail(null)
+    }
+  }, [])
+
+  const handleLogin = (user?: { email: string }) => {
+    setIsAuthenticated(true)
+    setUserEmail(user?.email ?? null)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    try {
+      localStorage.removeItem('s2s_auth')
+    } catch (err) {
+      // ignore
+    }
+    setUserEmail(null)
+    setMenuOpen(false)
+    navigate('/')
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 14)
@@ -430,19 +470,51 @@ function App() {
             <a className="hover:text-white transition-colors" href="/#second-life">
               Second-life
             </a>
-            <Link className="hover:text-white transition-colors" to="/analysis">
+            <Link className="hover:text-white/70 transition-colors" to="/analysis">
               Analysis
             </Link>
             <a className="hover:text-white transition-colors" href="/#contact">
               Contact
             </a>
+            {/* show account menu when authenticated */}
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="ml-3 flex items-center gap-2 rounded-full border border-white/10 bg-white/3 px-3 py-1 text-sm text-white/90 hover:bg-white/5"
+                >
+                  <span className="truncate max-w-[10rem]">{userEmail ?? 'Account'}</span>
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-md border border-white/10 bg-ink-2 py-1 shadow-lg">
+                    <Link
+                      to="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-white/90 hover:bg-white/5"
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm text-white/90 hover:bg-white/5"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </nav>
       </header>
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/analysis" element={<AnalysisPage />} />
+        {/* root shows login when unauthenticated, profile when authenticated */}
+        <Route path="/" element={isAuthenticated ? <HomePage /> : <LoginPage onLogin={handleLogin} />} />
+  <Route path="/profile" element={isAuthenticated ? <ProfilePage onLogout={handleLogout} /> : <Navigate to="/" replace />} />
+        <Route path="/analysis" element={isAuthenticated ? <AnalysisPage /> : <Navigate to="/" replace />} />
       </Routes>
     </div>
   )
